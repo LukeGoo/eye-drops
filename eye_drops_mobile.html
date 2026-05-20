@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d0e">
+<title>用药 · 今日</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d0e;
+  --bg-card: #1a1a1c;
+  --bg-elev: #232328;
+  --border: #2a2a2e;
+  --border-strong: #3a3a3f;
+  --text: #f0f0f2;
+  --text-dim: #9a9aa0;
+  --text-muted: #5a5a60;
+  --accent: #d4af37;
+  --done: #4a9c5e;
+  --done-bg: rgba(74, 156, 94, 0.12);
+  --past: #4a4a50;
+  --upcoming: #d4af37;
+  --upcoming-bg: rgba(212, 175, 55, 0.1);
+  
+  --c-diancbs: #e8985a;  /* 典必殊 - 暖橙 */
+  --c-zoq: #7ab8d4;      /* 左氧氟沙星 - 浅蓝 */
+  --c-flu: #d4554a;      /* 氟米龙(氟美童) - 红，对应 Santen 包装 */
+  --c-blsn: #3b7dd8;     /* 玻璃酸钠(珍视润) - 蓝，对应包装 */
+  --c-xnx: #7d4b8c;      /* 小牛血(速高捷) - 紫，对应包装 */
+  
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: 'Noto Serif SC', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(20px + var(--safe-bottom));
+}
+
+/* ============ 顶部固定栏 ============ */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(13, 13, 14, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: calc(12px + var(--safe-top)) 16px 12px;
+}
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nav-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elev);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.nav-btn:active { transform: scale(0.94); background: var(--border); }
+.nav-btn:disabled { opacity: 0.3; }
+
+.date-display {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+
+.date-display:active { background: var(--bg-elev); }
+
+.date-main {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.date-meta {
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+}
+
+.today-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 6px;
+  vertical-align: middle;
+  letter-spacing: 0.5px;
+}
+
+/* ============ 进度概览 ============ */
+.progress-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.progress-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.progress-count .done-num { color: var(--done); }
+
+.progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--done) 0%, #6ec07c 100%);
+  transition: width 0.3s ease;
+}
+
+/* ============ 下一次提醒 ============ */
+.next-up {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--upcoming-bg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.next-up-icon {
+  font-size: 18px;
+}
+
+.next-up-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.next-up-label {
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 2px;
+}
+
+.next-up-text {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.next-up-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-left: 8px;
+}
+
+.next-up.done {
+  background: var(--done-bg);
+  border-color: var(--done);
+}
+.next-up.done .next-up-label,
+.next-up.done .next-up-time { color: var(--done); }
+
+/* ============ 主要内容 ============ */
+main {
+  padding: 16px;
+  padding-bottom: 100px;
+}
+
+/* 批次卡片：把时间相近的事件分组 */
+.batch {
+  margin-bottom: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+.batch.completed {
+  opacity: 0.6;
+  background: var(--done-bg);
+  border-color: rgba(74, 156, 94, 0.25);
+}
+
+.batch.upcoming {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 6px 24px rgba(212, 175, 55, 0.15);
+}
+
+.batch.past {
+  border-color: rgba(212, 132, 122, 0.3);
+}
+
+.batch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border);
+}
+
+.batch.completed .batch-header {
+  background: rgba(74, 156, 94, 0.05);
+}
+
+.batch.upcoming .batch-header {
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.batch-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.batch.upcoming .batch-time { color: var(--accent); }
+.batch.completed .batch-time { color: var(--done); }
+
+.batch-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.batch-count {
+  padding: 2px 8px;
+  background: var(--bg-elev);
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.batch.completed .batch-count {
+  background: var(--done);
+  color: white;
+}
+
+.batch-duration {
+  color: var(--text-muted);
+}
+
+.batch-single-drug {
+  font-family: 'Noto Serif SC', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.batch-events {
+  padding: 4px 0;
+}
+
+.batch-events.single {
+  padding: 0;
+}
+
+.batch-events.single .event {
+  border-bottom: none;
+}
+
+/* 单条事件（在批次内） */
+.event {
+  display: flex;
+  align-items: stretch;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+  transition: all 0.15s ease;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+
+.event:last-child {
+  border-bottom: none;
+}
+
+.event.checked {
+  opacity: 0.55;
+}
+
+.event.past:not(.checked)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--c-diancbs);
+}
+
+.event-color {
+  width: 6px;
+  flex-shrink: 0;
+}
+
+.event-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
+.event-checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  background: transparent;
+}
+
+.event-checkbox input[type="checkbox"]:active { transform: scale(0.92); }
+
+.event-checkbox input[type="checkbox"]:checked {
+  background: var(--done);
+  border-color: var(--done);
+}
+
+.event-checkbox input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.event-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 14px 0;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.event-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-drug {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-drug::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--drug-color, var(--text-muted));
+  flex-shrink: 0;
+}
+
+.event.checked .event-drug {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  color: var(--text-muted);
+}
+
+.event-note {
+  font-size: 11px;
+  color: var(--past);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--past);
+  border-radius: 3px;
+  margin-top: 4px;
+}
+
+.event-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.event.checked .event-time { color: var(--text-muted); }
+
+.event.upcoming .event-time { color: var(--accent); }
+
+/* ============ 日期选择器弹窗 ============ */
+.date-picker-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.date-picker-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.date-picker {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px calc(20px + var(--safe-bottom));
+  max-height: 70vh;
+  overflow-y: auto;
+  z-index: 101;
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+  border-top: 1px solid var(--border);
+}
+
+.date-picker.active { transform: translateY(0); }
+
+.date-picker-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border-strong);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+
+.date-picker-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.date-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elev);
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.date-cell:active { transform: scale(0.94); }
+
+.date-cell.today {
+  border-color: var(--accent);
+}
+
+.date-cell.selected {
+  background: var(--accent);
+}
+
+.date-cell.complete::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  background: var(--done);
+  border-radius: 50%;
+}
+
+.date-cell.partial::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.date-cell-day {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.date-cell.selected .date-cell-day { color: var(--bg); }
+
+.date-cell-month {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 1px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.date-cell.selected .date-cell-month { color: var(--bg); }
+
+/* ============ 底部浮动按钮 ============ */
+.fab-container {
+  position: fixed;
+  bottom: calc(20px + var(--safe-bottom));
+  right: 16px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fab {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s ease;
+}
+
+.fab:active { transform: scale(0.92); }
+.fab.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+/* ============ 图例（折叠） ============ */
+.legend-toggle {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.legend-toggle button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+
+.legend {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  display: none;
+}
+
+.legend.show { display: block; }
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ============ 空状态 ============ */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.empty-state-text {
+  font-size: 14px;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="date-nav">
+    <button class="nav-btn" id="prev-day" aria-label="前一天">‹</button>
+    <div class="date-display" id="date-display" role="button" tabindex="0">
+      <div class="date-main" id="date-main">--</div>
+      <div class="date-meta" id="date-meta">--</div>
+    </div>
+    <button class="nav-btn" id="next-day" aria-label="后一天">›</button>
+  </div>
+  <div class="progress-section">
+    <div class="progress-row">
+      <span class="progress-label">今日进度</span>
+      <span class="progress-count"><span class="done-num" id="done-num">0</span> / <span id="total-num">0</span></span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+  <div id="next-up-container"></div>
+</header>
+
+<main>
+  <div id="events-container"></div>
+  
+  <div class="legend-toggle">
+    <button onclick="document.getElementById('legend').classList.toggle('show')">药物图例</button>
+    <div class="legend" id="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-diancbs)"></span>典必殊（妥布霉素地塞米松）</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-zoq)"></span>左氧氟沙星滴眼液</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-flu)"></span>氟米龙滴眼液</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-blsn)"></span>玻璃酸钠滴眼液</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--c-xnx)"></span>小牛血去蛋白提取物</div>
+    </div>
+  </div>
+</main>
+
+<!-- 日期选择器 -->
+<div class="date-picker-overlay" id="overlay"></div>
+<div class="date-picker" id="date-picker">
+  <div class="date-picker-handle"></div>
+  <div class="date-picker-title">选择日期</div>
+  <div class="date-grid" id="date-grid"></div>
+</div>
+
+<!-- 浮动按钮 -->
+<div class="fab-container">
+  <button class="fab" id="export-btn" title="导出">↓</button>
+  <button class="fab primary" id="today-btn" title="回到今天">⌂</button>
+</div>
+
+<script>
+const DATA = [{"date": "2026-05-20", "weekday": "周三", "day_index": 1, "phase": "Day 0 · 起始日（特殊安排）", "events": [{"time": "11:50", "drug": "典必殊", "note": "已过"}, {"time": "12:00", "drug": "典必殊", "note": "已过"}, {"time": "12:15", "drug": "典必殊", "note": "已过"}, {"time": "12:30", "drug": "典必殊", "note": "已过"}, {"time": "12:45", "drug": "典必殊", "note": "已过"}, {"time": "13:00", "drug": "左氧氟沙星", "note": "已过"}, {"time": "13:10", "drug": "氟米龙", "note": "已过"}, {"time": "13:30", "drug": "氟米龙", "note": ""}, {"time": "13:40", "drug": "玻璃酸钠", "note": ""}, {"time": "13:50", "drug": "小牛血提取物", "note": ""}, {"time": "15:00", "drug": "左氧氟沙星", "note": ""}, {"time": "15:10", "drug": "氟米龙", "note": ""}, {"time": "15:20", "drug": "玻璃酸钠", "note": ""}, {"time": "15:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:30", "drug": "氟米龙", "note": ""}, {"time": "18:00", "drug": "左氧氟沙星", "note": ""}, {"time": "18:10", "drug": "氟米龙", "note": ""}, {"time": "18:20", "drug": "玻璃酸钠", "note": ""}, {"time": "18:30", "drug": "小牛血提取物", "note": ""}, {"time": "19:30", "drug": "氟米龙", "note": ""}, {"time": "21:00", "drug": "左氧氟沙星", "note": ""}, {"time": "21:10", "drug": "氟米龙", "note": ""}, {"time": "21:20", "drug": "玻璃酸钠", "note": ""}, {"time": "21:30", "drug": "小牛血提取物", "note": ""}, {"time": "22:30", "drug": "氟米龙", "note": ""}], "display_day": "Day 0"}, {"date": "2026-05-21", "weekday": "周四", "day_index": 2, "phase": "Day 2 · 氟米龙 8 次/天· 含左氧氟沙星", "events": [{"time": "08:00", "drug": "左氧氟沙星", "note": ""}, {"time": "08:10", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "10:00", "drug": "氟米龙", "note": ""}, {"time": "12:00", "drug": "左氧氟沙星", "note": ""}, {"time": "12:10", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "14:00", "drug": "氟米龙", "note": ""}, {"time": "16:00", "drug": "左氧氟沙星", "note": ""}, {"time": "16:10", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:00", "drug": "氟米龙", "note": ""}, {"time": "20:00", "drug": "左氧氟沙星", "note": ""}, {"time": "20:10", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "22:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 1"}, {"date": "2026-05-22", "weekday": "周五", "day_index": 3, "phase": "Day 3 · 氟米龙 8 次/天· 含左氧氟沙星", "events": [{"time": "08:00", "drug": "左氧氟沙星", "note": ""}, {"time": "08:10", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "10:00", "drug": "氟米龙", "note": ""}, {"time": "12:00", "drug": "左氧氟沙星", "note": ""}, {"time": "12:10", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "14:00", "drug": "氟米龙", "note": ""}, {"time": "16:00", "drug": "左氧氟沙星", "note": ""}, {"time": "16:10", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:00", "drug": "氟米龙", "note": ""}, {"time": "20:00", "drug": "左氧氟沙星", "note": ""}, {"time": "20:10", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "22:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 2"}, {"date": "2026-05-23", "weekday": "周六", "day_index": 4, "phase": "Day 4 · 氟米龙 7 次/天· 含左氧氟沙星", "events": [{"time": "08:00", "drug": "左氧氟沙星", "note": ""}, {"time": "08:10", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "10:30", "drug": "氟米龙", "note": ""}, {"time": "12:00", "drug": "左氧氟沙星", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "氟米龙", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "14:30", "drug": "氟米龙", "note": ""}, {"time": "16:00", "drug": "左氧氟沙星", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "氟米龙", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:00", "drug": "左氧氟沙星", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 3"}, {"date": "2026-05-24", "weekday": "周日", "day_index": 5, "phase": "Day 5 · 氟米龙 7 次/天· 含左氧氟沙星", "events": [{"time": "08:00", "drug": "左氧氟沙星", "note": ""}, {"time": "08:10", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "10:30", "drug": "氟米龙", "note": ""}, {"time": "12:00", "drug": "左氧氟沙星", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "氟米龙", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "14:30", "drug": "氟米龙", "note": ""}, {"time": "16:00", "drug": "左氧氟沙星", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "氟米龙", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:00", "drug": "左氧氟沙星", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 4"}, {"date": "2026-05-25", "weekday": "周一", "day_index": 6, "phase": "Day 6 · 氟米龙 7 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "10:30", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "氟米龙", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "14:30", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "氟米龙", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 5"}, {"date": "2026-05-26", "weekday": "周二", "day_index": 7, "phase": "Day 7 · 氟米龙 6 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "11:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "13:30", "drug": "氟米龙", "note": ""}, {"time": "16:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 6"}, {"date": "2026-05-27", "weekday": "周三", "day_index": 8, "phase": "Day 8 · 氟米龙 6 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "11:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "13:30", "drug": "氟米龙", "note": ""}, {"time": "16:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 7"}, {"date": "2026-05-28", "weekday": "周四", "day_index": 9, "phase": "Day 9 · 氟米龙 6 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "11:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "13:30", "drug": "氟米龙", "note": ""}, {"time": "16:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 8"}, {"date": "2026-05-29", "weekday": "周五", "day_index": 10, "phase": "Day 10 · 氟米龙 5 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "11:30", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "15:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "22:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 9"}, {"date": "2026-05-30", "weekday": "周六", "day_index": 11, "phase": "Day 11 · 氟米龙 5 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "11:30", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "15:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "22:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 10"}, {"date": "2026-05-31", "weekday": "周日", "day_index": 12, "phase": "Day 12 · 氟米龙 5 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "11:30", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "15:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "18:30", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "22:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 11"}, {"date": "2026-06-01", "weekday": "周一", "day_index": 13, "phase": "Day 13 · 氟米龙 4 次/天", "events": [{"time": "08:10", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:10", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:10", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:10", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 12"}, {"date": "2026-06-02", "weekday": "周二", "day_index": 14, "phase": "Day 14 · 氟米龙 4 次/天", "events": [{"time": "08:10", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:10", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:10", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:10", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 13"}, {"date": "2026-06-03", "weekday": "周三", "day_index": 15, "phase": "Day 15 · 氟米龙 4 次/天", "events": [{"time": "08:10", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:10", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:10", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:10", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 14"}, {"date": "2026-06-04", "weekday": "周四", "day_index": 16, "phase": "Day 16 · 氟米龙 3 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "14:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:00", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 15"}, {"date": "2026-06-05", "weekday": "周五", "day_index": 17, "phase": "Day 17 · 氟米龙 3 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "14:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:00", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 16"}, {"date": "2026-06-06", "weekday": "周六", "day_index": 18, "phase": "Day 18 · 氟米龙 3 次/天", "events": [{"time": "08:00", "drug": "氟米龙", "note": ""}, {"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "14:00", "drug": "氟米龙", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:00", "drug": "氟米龙", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 17"}, {"date": "2026-06-07", "weekday": "周日", "day_index": 19, "phase": "Day 19 · 氟米龙 2 次/天", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "09:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 18"}, {"date": "2026-06-08", "weekday": "周一", "day_index": 20, "phase": "Day 20 · 氟米龙 2 次/天", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "09:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 19"}, {"date": "2026-06-09", "weekday": "周二", "day_index": 21, "phase": "Day 21 · 氟米龙 2 次/天", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "09:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}, {"time": "21:00", "drug": "氟米龙", "note": ""}], "display_day": "Day 20"}, {"date": "2026-06-10", "weekday": "周三", "day_index": 22, "phase": "Day 22 · 氟米龙 1 次/天", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 21"}, {"date": "2026-06-11", "weekday": "周四", "day_index": 23, "phase": "Day 23 · 氟米龙 1 次/天", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 22"}, {"date": "2026-06-12", "weekday": "周五", "day_index": 24, "phase": "Day 24 · 氟米龙 1 次/天", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:00", "drug": "氟米龙", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 23"}, {"date": "2026-06-13", "weekday": "周六", "day_index": 25, "phase": "Day 25 · 仅玻璃酸钠 + 小牛血", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 24"}, {"date": "2026-06-14", "weekday": "周日", "day_index": 26, "phase": "Day 26 · 仅玻璃酸钠 + 小牛血", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 25"}, {"date": "2026-06-15", "weekday": "周一", "day_index": 27, "phase": "Day 27 · 仅玻璃酸钠 + 小牛血", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 26"}, {"date": "2026-06-16", "weekday": "周二", "day_index": 28, "phase": "Day 28 · 仅玻璃酸钠 + 小牛血", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 27"}, {"date": "2026-06-17", "weekday": "周三", "day_index": 29, "phase": "Day 29 · 仅玻璃酸钠 + 小牛血", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 28"}, {"date": "2026-06-18", "weekday": "周四", "day_index": 30, "phase": "Day 30 · 仅玻璃酸钠 + 小牛血", "events": [{"time": "08:20", "drug": "玻璃酸钠", "note": ""}, {"time": "08:30", "drug": "小牛血提取物", "note": ""}, {"time": "12:20", "drug": "玻璃酸钠", "note": ""}, {"time": "12:30", "drug": "小牛血提取物", "note": ""}, {"time": "16:20", "drug": "玻璃酸钠", "note": ""}, {"time": "16:30", "drug": "小牛血提取物", "note": ""}, {"time": "20:20", "drug": "玻璃酸钠", "note": ""}, {"time": "20:30", "drug": "小牛血提取物", "note": ""}], "display_day": "Day 29"}];
+const STORAGE_KEY = 'eye_drops_v2';
+const DRUG_CLASS = {
+  '典必殊': 'diancbs', '左氧氟沙星': 'zoq', '氟米龙': 'flu',
+  '玻璃酸钠': 'blsn', '小牛血提取物': 'xnx'
+};
+const DRUG_COLORS = {
+  'diancbs': '#e8985a', 'zoq': '#7ab8d4', 'flu': '#d4554a',
+  'blsn': '#3b7dd8', 'xnx': '#7d4b8c'
+};
+
+let state = {};
+try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch {}
+
+let currentIdx = 0;
+
+function getTodayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + 
+    String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+    String(d.getDate()).padStart(2, '0');
+}
+
+function getNowMinutes() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function timeToMinutes(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function findTodayIdx() {
+  const today = getTodayStr();
+  let idx = DATA.findIndex(d => d.date === today);
+  if (idx === -1) {
+    // 找最近的未来日期
+    idx = DATA.findIndex(d => d.date >= today);
+    if (idx === -1) idx = DATA.length - 1;
+  }
+  return idx;
+}
+
+function getKey(date, eventIdx) {
+  return `check-${date}-${eventIdx}`;
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function groupIntoBatches(events) {
+  // 规则：相邻 ≤30 分钟 且 批次总跨度 ≤45 分钟，归为一批
+  const BATCH_GAP_MINUTES = 30;
+  const BATCH_MAX_SPAN = 45;
+  const batches = [];
+  let current = null;
+  
+  events.forEach((e, i) => {
+    const mins = timeToMinutes(e.time);
+    const item = { ...e, originalIdx: i, mins };
+    const gapOk = current && (mins - current.lastMins <= BATCH_GAP_MINUTES);
+    const spanOk = current && (mins - current.startMins <= BATCH_MAX_SPAN);
+    
+    if (!current || !gapOk || !spanOk) {
+      if (current) batches.push(current);
+      current = {
+        startTime: e.time,
+        startMins: mins,
+        lastMins: mins,
+        events: [item]
+      };
+    } else {
+      current.events.push(item);
+      current.lastMins = mins;
+    }
+  });
+  if (current) batches.push(current);
+  
+  batches.forEach(b => {
+    b.endTime = b.events[b.events.length - 1].time;
+    b.durationMins = b.lastMins - b.startMins;
+  });
+  
+  return batches;
+}
+
+function renderDay() {
+  const day = DATA[currentIdx];
+  const today = getTodayStr();
+  const isToday = day.date === today;
+  const now = getNowMinutes();
+  
+  // 顶部日期
+  const dateMain = document.getElementById('date-main');
+  const dateMeta = document.getElementById('date-meta');
+  dateMain.innerHTML = day.date.slice(5).replace('-', '/') + ' ' + day.weekday +
+    (isToday ? '<span class="today-badge">今日</span>' : '');
+  dateMeta.textContent = day.phase;
+  
+  // 进度
+  let done = 0;
+  day.events.forEach((e, i) => {
+    if (state[getKey(day.date, i)]) done++;
+  });
+  document.getElementById('done-num').textContent = done;
+  document.getElementById('total-num').textContent = day.events.length;
+  document.getElementById('progress-fill').style.width = 
+    day.events.length ? (done / day.events.length * 100) + '%' : '0%';
+  
+  // 下一次提醒
+  const nextContainer = document.getElementById('next-up-container');
+  if (isToday) {
+    let nextEvent = null;
+    let nextIdx = -1;
+    for (let i = 0; i < day.events.length; i++) {
+      const e = day.events[i];
+      const mins = timeToMinutes(e.time);
+      if (mins >= now && !state[getKey(day.date, i)] && e.note !== '已过') {
+        nextEvent = e;
+        nextIdx = i;
+        break;
+      }
+    }
+    if (nextEvent) {
+      const minsUntil = timeToMinutes(nextEvent.time) - now;
+      let timeText;
+      if (minsUntil <= 0) timeText = '现在';
+      else if (minsUntil < 60) timeText = `${minsUntil} 分钟后`;
+      else timeText = `${Math.floor(minsUntil / 60)}小时${minsUntil % 60}分钟后`;
+      nextContainer.innerHTML = `
+        <div class="next-up">
+          <div class="next-up-icon">⏰</div>
+          <div class="next-up-content">
+            <div class="next-up-label">下一次 · ${timeText}</div>
+            <div class="next-up-text">${nextEvent.drug}</div>
+          </div>
+          <div class="next-up-time">${nextEvent.time}</div>
+        </div>`;
+    } else if (day.events.length > 0 && done === day.events.length) {
+      nextContainer.innerHTML = `
+        <div class="next-up done">
+          <div class="next-up-icon">✓</div>
+          <div class="next-up-content">
+            <div class="next-up-label">今日完成</div>
+            <div class="next-up-text">所有用药已完成，明天加油</div>
+          </div>
+        </div>`;
+    } else if (done > 0) {
+      nextContainer.innerHTML = `
+        <div class="next-up done">
+          <div class="next-up-icon">✓</div>
+          <div class="next-up-content">
+            <div class="next-up-label">今日剩余</div>
+            <div class="next-up-text">${day.events.length - done} 次未完成</div>
+          </div>
+        </div>`;
+    } else {
+      nextContainer.innerHTML = '';
+    }
+  } else {
+    nextContainer.innerHTML = '';
+  }
+  
+  // 事件列表
+  const container = document.getElementById('events-container');
+  if (day.events.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">○</div>
+        <div class="empty-state-text">这一天没有用药安排</div>
+      </div>`;
+    document.getElementById('prev-day').disabled = currentIdx === 0;
+    document.getElementById('next-day').disabled = currentIdx === DATA.length - 1;
+    return;
+  }
+  
+  const batches = groupIntoBatches(day.events);
+  
+  let html = '';
+  batches.forEach(batch => {
+    // 批次完成度
+    let batchDone = 0;
+    batch.events.forEach(e => {
+      if (state[getKey(day.date, e.originalIdx)]) batchDone++;
+    });
+    const allDone = batchDone === batch.events.length;
+    const isBatchPast = isToday && batch.lastMins < now && !allDone;
+    const isBatchUpcoming = isToday && !allDone && batch.startMins >= now && batch.startMins < now + 60;
+    
+    const batchClasses = ['batch'];
+    if (allDone) batchClasses.push('completed');
+    if (isBatchUpcoming) batchClasses.push('upcoming');
+    if (isBatchPast) batchClasses.push('past');
+    
+    // 标题：单事件用单时间，多事件用时间范围
+    const isSingle = batch.events.length === 1;
+    const timeLabel = isSingle
+      ? batch.startTime
+      : `${batch.startTime} – ${batch.endTime}`;
+    
+    let metaHtml = '';
+    if (isSingle) {
+      // 单事件批次：只显示完成状态
+      metaHtml = batchDone === 1 
+        ? '<span class="batch-count">✓</span>'
+        : `<span class="batch-single-drug">${batch.events[0].drug}</span>`;
+    } else {
+      metaHtml = `
+        <span class="batch-duration">${batch.durationMins} 分钟</span>
+        <span class="batch-count">${batchDone} / ${batch.events.length}</span>`;
+    }
+    
+    html += `
+      <div class="${batchClasses.join(' ')}">
+        <div class="batch-header">
+          <div class="batch-time">${timeLabel}</div>
+          <div class="batch-meta">${metaHtml}</div>
+        </div>
+        <div class="batch-events${isSingle ? ' single' : ''}">`;
+    
+    batch.events.forEach(e => {
+      const drugClass = DRUG_CLASS[e.drug] || 'default';
+      const key = getKey(day.date, e.originalIdx);
+      const checked = !!state[key];
+      const isPast = isToday && e.mins < now && !checked;
+      
+      const classes = ['event'];
+      if (checked) classes.push('checked');
+      if (isPast && !e.note) classes.push('past');
+      
+      html += `
+        <div class="${classes.join(' ')}" data-key="${key}">
+          <div class="event-color" style="background: ${DRUG_COLORS[drugClass]}"></div>
+          <div class="event-checkbox">
+            <input type="checkbox" id="${key}" ${checked ? 'checked' : ''}>
+          </div>
+          <label for="${key}" class="event-body">
+            <div class="event-info">
+              <div class="event-drug">${e.drug}</div>
+              ${e.note ? `<div class="event-note">${e.note}</div>` : ''}
+            </div>
+            <div class="event-time">${e.time}</div>
+          </label>
+        </div>`;
+    });
+    
+    html += `</div></div>`;
+  });
+  
+  container.innerHTML = html;
+  
+  // 绑定 checkbox 事件
+  container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const key = cb.id;
+      if (cb.checked) state[key] = true;
+      else delete state[key];
+      saveState();
+      
+      // 触觉反馈（iOS）
+      if (cb.checked && window.navigator.vibrate) {
+        window.navigator.vibrate(10);
+      }
+      
+      renderDay(); // 重渲染以更新进度和下一次提醒
+    });
+  });
+  
+  // 导航按钮状态
+  document.getElementById('prev-day').disabled = currentIdx === 0;
+  document.getElementById('next-day').disabled = currentIdx === DATA.length - 1;
+}
+
+function renderDatePicker() {
+  const today = getTodayStr();
+  let html = '';
+  DATA.forEach((d, i) => {
+    let done = 0;
+    d.events.forEach((e, ei) => { if (state[getKey(d.date, ei)]) done++; });
+    const status = d.events.length === 0 ? '' :
+      done === d.events.length ? 'complete' :
+      done > 0 ? 'partial' : '';
+    const classes = ['date-cell'];
+    if (d.date === today) classes.push('today');
+    if (i === currentIdx) classes.push('selected');
+    if (status) classes.push(status);
+    
+    const dateParts = d.date.split('-');
+    html += `
+      <div class="${classes.join(' ')}" data-idx="${i}">
+        <div class="date-cell-day">${parseInt(dateParts[2])}</div>
+        <div class="date-cell-month">${parseInt(dateParts[1])}月</div>
+      </div>`;
+  });
+  document.getElementById('date-grid').innerHTML = html;
+  
+  document.querySelectorAll('.date-cell').forEach(cell => {
+    cell.addEventListener('click', () => {
+      currentIdx = parseInt(cell.dataset.idx);
+      renderDay();
+      closeDatePicker();
+    });
+  });
+}
+
+function openDatePicker() {
+  renderDatePicker();
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('date-picker').classList.add('active');
+}
+
+function closeDatePicker() {
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('date-picker').classList.remove('active');
+}
+
+// 事件绑定
+document.getElementById('prev-day').addEventListener('click', () => {
+  if (currentIdx > 0) { currentIdx--; renderDay(); }
+});
+document.getElementById('next-day').addEventListener('click', () => {
+  if (currentIdx < DATA.length - 1) { currentIdx++; renderDay(); }
+});
+document.getElementById('date-display').addEventListener('click', openDatePicker);
+document.getElementById('overlay').addEventListener('click', closeDatePicker);
+document.getElementById('today-btn').addEventListener('click', () => {
+  currentIdx = findTodayIdx();
+  renderDay();
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const lines = ['日期,时间,药物,状态'];
+  DATA.forEach(d => {
+    d.events.forEach((e, i) => {
+      const checked = !!state[getKey(d.date, i)];
+      lines.push(`${d.date},${e.time},${e.drug},${checked ? '已完成' : '未完成'}`);
+    });
+  });
+  const csv = '\ufeff' + lines.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `eye_drops_${getTodayStr()}.csv`;
+  a.click();
+});
+
+// 滑动手势切换日期
+let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+const main = document.querySelector('main');
+main.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  touchStartTime = Date.now();
+}, { passive: true });
+
+main.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  const dt = Date.now() - touchStartTime;
+  // 横向滑动 > 60px、纵向 < 40px、时间 < 500ms
+  if (Math.abs(dx) > 60 && Math.abs(dy) < 40 && dt < 500) {
+    if (dx > 0 && currentIdx > 0) { currentIdx--; renderDay(); }
+    else if (dx < 0 && currentIdx < DATA.length - 1) { currentIdx++; renderDay(); }
+  }
+}, { passive: true });
+
+// 初始化
+currentIdx = findTodayIdx();
+renderDay();
+
+// 每分钟自动刷新（更新"下一次提醒"的倒计时）
+setInterval(() => {
+  const day = DATA[currentIdx];
+  if (day.date === getTodayStr()) renderDay();
+}, 60000);
+
+// 页面重新可见时刷新（手机切回来时）
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) renderDay();
+});
+</script>
+
+</body>
+</html>
